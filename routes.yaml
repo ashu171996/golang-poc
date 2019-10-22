@@ -1,0 +1,13 @@
+Routes:
+- Path : "/api/v1/project/putdata"
+  Callback : "Putdata"
+  Method : ""
+- Path : "/api/v1/project/getdataByManager/{id}"
+  Callback : "GetdataByManager"
+  Method : "GET"
+- Path : "/api/v1/project/getdataByProject/{id}"
+  Callback : "GetdataByProject"
+  Method : "GET"
+- Path : "/api/v1/project/getProjectName"
+  Callback : "GetProjectName"
+  Method : "GET"
