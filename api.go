@@ -11,12 +11,27 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
+type update struct{
+     Pm string  `json:"manager_name"`
+     Pn string  `json:"name"`
+}
 
 type Project struct {
+        Id             string `json:"Id"`
 	ProjectName    string `json:"name"`
 	ManagerName    string `json:"manager_name"`
 	ManagerEmailID string `json:"manager_email_id"`
 	Flag           string `json:"flag"`
+        
+}
+
+
+type Recive struct {
+       // Id             string `json:"Id"`
+	ProjectName    string `json:"name"`
+	ManagerName    string `json:"manager_name"`
+	ManagerEmailID string `json:"manager_email_id"`
+	//Flag           string `json:"flag"`
 }
 
 type Error struct {
@@ -57,19 +72,19 @@ func (c *Commander) Putdata(w http.ResponseWriter, r *http.Request) {
         reqToken = splitToken[1]
         user, _ := db.Query("SELECT * FROM token WHERE access_token=?",reqToken)
 	if user.Next() != false {
-		var dat Project
+		var dat Recive
 
 		json.NewDecoder(r.Body).Decode(&dat)
 		Pn := dat.ProjectName
 		Mn := dat.ManagerName
 		Email := dat.ManagerEmailID
-		Flag := dat.Flag
+		Flag := 1
 
 		insForm, err := db.Prepare("INSERT INTO Project(name, manager_name,manager_email_id,flag)VALUES(?,?,?,?)")
 		if err != nil {
 			panic(err.Error())
 		}
-		result,_ := insForm.Exec(Pn, Mn, Email, Flag)
+		result,_ := insForm.Exec(Pn, Mn, Email,Flag)
                 _,er := result.RowsAffected()
                 if er != nil{
                  erro.Errtype = "Dupelicate insertion"
@@ -101,7 +116,7 @@ func (c *Commander) GetdataByManager(w http.ResponseWriter, r *http.Request) {
 		p := mux.Vars(r)
 	        key := p["id"]
         
-         rows, err := db.Query("SELECT * FROM Project WHERE manager_name=? LIMIT 10 OFFSET ?", key,offset)
+         rows, err := db.Query("SELECT * FROM Project WHERE manager_name=? AND flag = 1 LIMIT 10 OFFSET ?", key,offset)
       	if err != nil {
                fmt.Println("error")
       		log.Fatal(err)
@@ -112,7 +127,7 @@ func (c *Commander) GetdataByManager(w http.ResponseWriter, r *http.Request) {
      
         for rows.Next() {
 
-      		 rows.Scan(&pro.ProjectName,&pro.ManagerName,&pro.ManagerEmailID,&pro.Flag)
+      		 rows.Scan(&pro.ProjectName,&pro.ManagerName,&pro.ManagerEmailID,&pro.Flag,&pro.Id)
          Proj = append(Proj,pro)
       	}
        setupResponse(&w, r)
@@ -140,7 +155,7 @@ func (c *Commander) GetdataByProject(w http.ResponseWriter, r *http.Request) {
 		p := mux.Vars(r)
 	        key := p["id"]
         
-         rows, err := db.Query("SELECT * FROM Project WHERE name=? LIMIT 10 OFFSET ?", key,offset)
+         rows, err := db.Query("SELECT * FROM Project WHERE name=? AND flag = 1 LIMIT 10 OFFSET ?", key,offset)
       	if err != nil {
                fmt.Println("error")
       		log.Fatal(err)
@@ -151,7 +166,7 @@ func (c *Commander) GetdataByProject(w http.ResponseWriter, r *http.Request) {
      
         for rows.Next() {
 
-      		 rows.Scan(&pro.ProjectName,&pro.ManagerName,&pro.ManagerEmailID,&pro.Flag)
+      		 rows.Scan(&pro.ProjectName,&pro.ManagerName,&pro.ManagerEmailID,&pro.Flag,&pro.Id)
          Proj = append(Proj,pro)
       	}
        setupResponse(&w, r)
@@ -195,5 +210,53 @@ func (c *Commander) GetProjectName(w http.ResponseWriter,r *http.Request) {
 }else{
        w.WriteHeader(http.StatusUnauthorized)
        }
+
+}
+
+
+func (c *Commander) UpdateData(w http.ResponseWriter,r *http.Request) {
+     db := dbConn()
+      reqToken := r.Header.Get("Authorization")
+	splitToken := strings.Split(reqToken, "Bearer")
+        reqToken = splitToken[1]
+        user, _ := db.Query("SELECT * FROM token WHERE access_token=?",reqToken)
+	if user.Next() != false {
+         var dat Project
+
+		json.NewDecoder(r.Body).Decode(&dat)
+                ID := dat.Id
+		Pn := dat.ProjectName
+		Mn := dat.ManagerName
+		Email := dat.ManagerEmailID
+		//Flag := dat.Flag
+
+         update,_ := db.Query("UPDATE Project name = ?, manager_name = ?,manager_email_id = ? WHERE Id =?",Pn,Mn,Email,ID)
+         defer update.Close() 
+
+        }     
+
+
+
+}
+
+
+func (c *Commander) DeleteData(w http.ResponseWriter,r *http.Request) {
+       db := dbConn()
+       var dat update
+        reqToken := r.Header.Get("Authorization")
+	splitToken := strings.Split(reqToken, "Bearer")
+        reqToken = splitToken[1]
+        user, _ := db.Query("SELECT * FROM token WHERE access_token=?",reqToken)
+	if user.Next() != false {
+         
+          json.NewDecoder(r.Body).Decode(&dat)
+
+         del,_ := db.Query("UPDATE Project flag = 0 WHERE  Project name = ?, manager_name = ?",dat.Pn,dat.Pm)
+         defer del.Close()
+
+
+
+}
+
 
 }
